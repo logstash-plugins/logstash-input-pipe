@@ -10,7 +10,6 @@ require "socket" # for Socket.gethostname
 #
 class LogStash::Inputs::Pipe < LogStash::Inputs::Base
   config_name "pipe"
-  milestone 1
 
   # TODO(sissel): This should switch to use the `line` codec by default
   # once we switch away from doing 'readline'
