@@ -1,4 +1,5 @@
 # encoding: utf-8
+return if LogStash::Environment.windows?
 require "logstash/devutils/rspec/spec_helper"
 require "tempfile"
 
