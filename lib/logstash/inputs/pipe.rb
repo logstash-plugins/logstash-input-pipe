@@ -1,4 +1,7 @@
 # encoding: utf-8
+if LogStash::Environment.windows?
+  raise Exception("This plugin doesn't not work on Microsoft Windows.")
+end
 require "logstash/inputs/base"
 require "logstash/namespace"
 require "socket" # for Socket.gethostname
