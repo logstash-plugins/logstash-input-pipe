@@ -1,4 +1,5 @@
 # encoding: utf-8
+require "logstash/environment"
 if LogStash::Environment.windows?
   raise Exception("This plugin does not work on Microsoft Windows.")
 end

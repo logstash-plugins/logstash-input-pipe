@@ -1,10 +1,8 @@
 # encoding: utf-8
-return if LogStash::Environment.windows?
 require "logstash/devutils/rspec/spec_helper"
 require "tempfile"
 
-describe "inputs/pipe" do
-  
+describe "inputs/pipe", :unix => true do
 
   describe "echo" do
     event_count = 1
