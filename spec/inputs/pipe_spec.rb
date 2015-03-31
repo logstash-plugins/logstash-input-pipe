@@ -4,56 +4,52 @@ require "tempfile"
 
 describe "inputs/pipe", :unix => true do
 
-  describe "echo" do
-    event_count = 1
-    tmp_file = Tempfile.new('logstash-spec-input-pipe')
-
-    config <<-CONFIG
-    input {
-      pipe {
-        command => "echo ☹"
+  # rince and repeat a few times to stress the shutdown sequence
+  5.times.each do
+    it "should pipe from echo" do
+      conf = <<-CONFIG
+      input {
+        pipe {
+          command => "echo ☹"
+        }
       }
-    }
-    CONFIG
+      CONFIG
 
-    input do |pipeline, queue|
-      Thread.new { pipeline.run }
-      sleep 0.1 while !pipeline.ready?
-
-      events = event_count.times.collect { queue.pop }
-      event_count.times do |i|
-        insist { events[i]["message"] } == "☹"
+      event = input(conf) do |pipeline, queue|
+        queue.pop
       end
-    end # input
+
+      insist { event["message"] } == "☹"
+    end
   end
 
-  describe "tail -f" do
-    event_count = 10
-    tmp_file = Tempfile.new('logstash-spec-input-pipe')
+  # rince and repeat a few times to stress the shutdown sequence
+  5.times.each do
+    it "should pipe from tail -f" do
+      event_count = 10
+      tmp_file = Tempfile.new('logstash-spec-input-pipe')
 
-    config <<-CONFIG
-    input {
-      pipe {
-        command => "tail -f #{tmp_file.path}"
+      conf = <<-CONFIG
+      input {
+        pipe {
+          command => "tail -n +0 -f #{tmp_file.path}"
+        }
       }
-    }
-    CONFIG
+      CONFIG
 
-    input do |pipeline, queue|
-      Thread.new { pipeline.run }
-      sleep 0.1 while !pipeline.ready?
-
-      File.open(tmp_file, "a") do |fd|
-        event_count.times do |i|
-          # unicode smiley for testing unicode support!
-          fd.puts("#{i} ☹")
+      events = input(conf) do |pipeline, queue|
+        File.open(tmp_file, "a") do |fd|
+          event_count.times do |i|
+            # unicode smiley for testing unicode support!
+            fd.puts("#{i} ☹")
+          end
         end
+        event_count.times.map { queue.pop }
       end
-      events = event_count.times.collect { queue.pop }
+
       event_count.times do |i|
         insist { events[i]["message"] } == "#{i} ☹"
       end
-    end # input
+    end
   end
-
 end

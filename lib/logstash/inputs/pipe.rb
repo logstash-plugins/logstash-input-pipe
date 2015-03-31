@@ -26,6 +26,12 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
   #    command => "echo hello world"
   config :command, :validate => :string, :required => true
 
+  def initialize(params)
+    super
+    @shutdown_requested = false
+    @pipe = nil
+  end # def initialize
+
   public
   def register
     @logger.info("Registering pipe input", :command => @command)
@@ -33,14 +39,13 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
 
   public
   def run(queue)
-    loop do
+    while !@shutdown_requested
       begin
-        @pipe = IO.popen(@command, mode="r")
+        @pipe = IO.popen(@command, mode = "r")
         hostname = Socket.gethostname
 
         @pipe.each do |line|
           line = line.chomp
-          source = "pipe://#{hostname}/#{@command}"
           @logger.debug? && @logger.debug("Received line", :command => @command, :line => line)
           @codec.decode(line) do |event|
             event["host"] = hostname
@@ -49,6 +54,8 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
             queue << event
           end
         end
+        @pipe.close
+        @pipe = nil
       rescue LogStash::ShutdownSignal => e
         break
       rescue Exception => e
@@ -59,4 +66,15 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
       sleep(10)
     end
   end # def run
+
+  def teardown
+    @shutdown_requested = true
+    if @pipe
+      Process.kill("KILL", @pipe.pid) rescue nil
+      @pipe.close rescue nil
+      @pipe = nil
+    end
+    finished
+  end
+
 end # class LogStash::Inputs::Pipe
