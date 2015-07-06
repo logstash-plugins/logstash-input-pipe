@@ -4,6 +4,8 @@ This is a plugin for [Logstash](https://github.com/elasticsearch/logstash).
 
 It is fully free and fully open source. The license is Apache 2.0, meaning you are pretty much free to use it however you want in whatever way.
 
+This plugin does not work on Microsoft Windows.
+
 ## Documentation
 
 Logstash provides infrastructure to automatically generate documentation for this plugin. We use the asciidoc format to write documentation so any comments in the source code will be first converted into asciidoc and then into html. All plugin documentation are placed under one [central location](http://www.elasticsearch.org/guide/en/logstash/current/).
