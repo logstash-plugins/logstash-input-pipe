@@ -6,6 +6,7 @@ end
 require "logstash/inputs/base"
 require "logstash/namespace"
 require "socket" # for Socket.gethostname
+require "stud/interval"
 
 # Stream events from a long running command pipe.
 #
@@ -28,7 +29,6 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
 
   def initialize(params)
     super
-    @shutdown_requested = false
     @pipe = nil
   end # def initialize
 
@@ -39,9 +39,9 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
 
   public
   def run(queue)
-    while !@shutdown_requested
+    while !stop?
       begin
-        @pipe = IO.popen(@command, mode = "r")
+        @pipe = IO.popen(@command, "r")
         hostname = Socket.gethostname
 
         @pipe.each do |line|
@@ -56,25 +56,22 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
         end
         @pipe.close
         @pipe = nil
-      rescue LogStash::ShutdownSignal => e
-        break
       rescue Exception => e
         @logger.error("Exception while running command", :e => e, :backtrace => e.backtrace)
       end
 
       # Keep running the command forever.
-      sleep(10)
+      Stud.stoppable_sleep(10) do
+        stop?
+      end
     end
   end # def run
 
-  def teardown
-    @shutdown_requested = true
+  def stop
     if @pipe
       Process.kill("KILL", @pipe.pid) rescue nil
       @pipe.close rescue nil
       @pipe = nil
     end
-    finished
   end
-
 end # class LogStash::Inputs::Pipe
