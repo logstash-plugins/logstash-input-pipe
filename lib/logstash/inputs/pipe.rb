@@ -48,8 +48,8 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
           line = line.chomp
           @logger.debug? && @logger.debug("Received line", :command => @command, :line => line)
           @codec.decode(line) do |event|
-            event["host"] = hostname
-            event["command"] = @command
+            event.set("host", hostname)
+            event.set("command", @command)
             decorate(event)
             queue << event
           end

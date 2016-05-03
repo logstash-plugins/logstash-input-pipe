@@ -42,7 +42,7 @@ describe LogStash::Inputs::Pipe, :unix => true do
     end
 
     it "should receive the pipe" do
-      expect(event["message"]).to eq("☹")
+      expect(event.get("message")).to eq("☹")
     end
 
   end
@@ -75,7 +75,7 @@ describe LogStash::Inputs::Pipe, :unix => true do
 
     it "should receive all piped elements" do
       event_count.times do |i|
-        expect(events[i]["message"]).to eq("#{i} ☹")
+        expect(events[i].get("message")).to eq("#{i} ☹")
       end
     end
   end
