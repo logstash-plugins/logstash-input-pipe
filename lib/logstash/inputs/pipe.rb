@@ -11,7 +11,7 @@ require "stud/interval"
 # Stream events from a long running command pipe.
 #
 # By default, each event is assumed to be one line. If you
-# want to join lines, you'll want to use the multiline filter.
+# want to join lines, you'll want to use the multiline codec.
 #
 class LogStash::Inputs::Pipe < LogStash::Inputs::Base
   config_name "pipe"
