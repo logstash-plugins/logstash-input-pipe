@@ -49,7 +49,6 @@ input plugins.
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-once we switch away from doing 'readline'
 Command to run and read events from, one line at a time.
 
 Example:
