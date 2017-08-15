@@ -1,3 +1,6 @@
+## 3.0.5
+  - Fix some documentation issues
+
 ## 3.0.3
   - Docs: Remove mention of the multiline filter plugin because it's no longer supported
 
