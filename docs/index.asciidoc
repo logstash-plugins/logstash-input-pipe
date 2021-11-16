@@ -101,7 +101,7 @@ See <<plugins-{type}s-{plugin}-ecs>> for detailed information.
     },
     "host" => {
         "name" => "deus-ex-machina"
-    },
+    }
 }
 -----
 
