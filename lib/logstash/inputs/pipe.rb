@@ -34,30 +34,31 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
 
   public
   def register
-    @logger.info("Registering pipe input", :command => @command)
+    @logger.debug("Registering pipe input", :command => @command)
+
+    @hostname = Socket.gethostname.freeze
   end # def register
 
   public
   def run(queue)
     while !stop?
       begin
-        @pipe = IO.popen(@command, "r")
-        hostname = Socket.gethostname
+        pipe = @pipe = IO.popen(@command, "r")
 
-        @pipe.each do |line|
+        pipe.each do |line|
           line = line.chomp
           @logger.debug? && @logger.debug("Received line", :command => @command, :line => line)
           @codec.decode(line) do |event|
-            event.set("host", hostname)
+            event.set("host", @hostname)
             event.set("command", @command)
             decorate(event)
             queue << event
           end
         end
-        @pipe.close
+        pipe.close
         @pipe = nil
       rescue Exception => e
-        @logger.error("Exception while running command", :e => e, :backtrace => e.backtrace)
+        @logger.error("Exception while running command", :exception => e, :backtrace => e.backtrace)
       end
 
       # Keep running the command forever.
@@ -68,9 +69,10 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
   end # def run
 
   def stop
-    if @pipe
-      Process.kill("KILL", @pipe.pid) rescue nil
-      @pipe.close rescue nil
+    pipe = @pipe
+    if pipe
+      Process.kill("KILL", pipe.pid) rescue nil
+      pipe.close rescue nil
       @pipe = nil
     end
   end
