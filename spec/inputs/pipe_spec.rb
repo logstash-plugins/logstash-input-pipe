@@ -98,9 +98,8 @@ describe LogStash::Inputs::Pipe, :unix => true do
     end
 
     it "should receive all piped elements" do
-      event_count.times do |i|
-        expect(events[i].get("message")).to eq("#{i} ☹")
-      end
+      messages = event_count.times.map { |i| events[i].get("message") }
+      expect( messages.sort ).to eql event_count.times.map { |i| "#{i} ☹" }
     end
   end
 end
