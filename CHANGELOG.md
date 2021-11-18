@@ -1,3 +1,6 @@
+## 3.1.0
+  -  Feat: adjust fields for ECS compatibility [#19](https://github.com/logstash-plugins/logstash-input-pipe/pull/19)
+
 ## 3.0.7
   - Docs: Set the default_codec doc attribute.
 
