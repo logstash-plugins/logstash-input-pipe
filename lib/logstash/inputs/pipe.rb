@@ -8,12 +8,17 @@ require "logstash/namespace"
 require "socket" # for Socket.gethostname
 require "stud/interval"
 
+require 'logstash/plugin_mixins/ecs_compatibility_support'
+
 # Stream events from a long running command pipe.
 #
 # By default, each event is assumed to be one line. If you
 # want to join lines, you'll want to use the multiline codec.
 #
 class LogStash::Inputs::Pipe < LogStash::Inputs::Base
+
+  include LogStash::PluginMixins::ECSCompatibilitySupport(:disabled, :v1, :v8 => :v1)
+
   config_name "pipe"
 
   # TODO(sissel): This should switch to use the `line` codec by default
@@ -34,30 +39,35 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
 
   public
   def register
-    @logger.info("Registering pipe input", :command => @command)
+    @logger.debug("Registering pipe input", :command => @command)
+
+    @hostname = Socket.gethostname.freeze
+
+    @host_name_field =            ecs_select[disabled: 'host',    v1: '[host][name]']
+    @process_command_line_field = ecs_select[disabled: 'command', v1: '[process][command_line]']
   end # def register
 
   public
   def run(queue)
     while !stop?
       begin
-        @pipe = IO.popen(@command, "r")
-        hostname = Socket.gethostname
+        pipe = @pipe = IO.popen(@command, "r")
 
-        @pipe.each do |line|
+        pipe.each do |line|
           line = line.chomp
           @logger.debug? && @logger.debug("Received line", :command => @command, :line => line)
+
           @codec.decode(line) do |event|
-            event.set("host", hostname)
-            event.set("command", @command)
             decorate(event)
+            event.set(@host_name_field, @hostname) unless event.include?(@host_name_field)
+            event.set(@process_command_line_field, @command) unless event.include?(@process_command_line_field)
             queue << event
           end
         end
-        @pipe.close
+        pipe.close
         @pipe = nil
       rescue Exception => e
-        @logger.error("Exception while running command", :e => e, :backtrace => e.backtrace)
+        @logger.error("Exception while running command", :exception => e, :backtrace => e.backtrace)
       end
 
       # Keep running the command forever.
@@ -68,9 +78,10 @@ class LogStash::Inputs::Pipe < LogStash::Inputs::Base
   end # def run
 
   def stop
-    if @pipe
-      Process.kill("KILL", @pipe.pid) rescue nil
-      @pipe.close rescue nil
+    pipe = @pipe
+    if pipe
+      Process.kill("KILL", pipe.pid) rescue nil
+      pipe.close rescue nil
       @pipe = nil
     end
   end
